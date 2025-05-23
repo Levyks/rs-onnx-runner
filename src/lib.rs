@@ -64,7 +64,7 @@ pub extern "C" fn create_runner(
             let runner_ptr = Box::into_raw(Box::new(runner));
             tracing::info!("Runner pointer: {:?}", runner_ptr);
             let runner_opaque = RunnerOpaque(runner_ptr);
-            tracing::info!("Runner opaque pointer: {:?}", runner_opaque);
+            tracing::info!("Runner opaque created");
             unsafe {
                 *out_runner = Box::into_raw(Box::new(runner_opaque));
                 tracing::info!("Runner opaque pointer set: {:?}", *out_runner);
