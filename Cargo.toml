@@ -1,0 +1,24 @@
+[package]
+name = "onnx_runner"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "onnx_runner"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bytemuck = "1.23.0"
+opencv = "0.94.4"
+thiserror = "2.0.12"
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+ort = "2.0.0-rc.9"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+ort = {version = "2.0.0-rc.9", features = ["default", "coreml"]}
+
+[features]
+default = []
+directml = ["ort/directml"]
+cuda = ["ort/cuda"]
