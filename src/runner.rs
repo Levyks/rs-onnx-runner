@@ -31,7 +31,7 @@ impl Runner {
                 {
                     let mut builder = ort::execution_providers::CoreMLExecutionProvider::default();
                     if !use_gpu {
-                        builder = builder.with_use_cpu_only(true)
+                        builder = builder.with_cpu_only()
                     }
                     builder.build()
                 }
