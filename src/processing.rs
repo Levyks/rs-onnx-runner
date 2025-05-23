@@ -1,4 +1,4 @@
-use opencv::core::{Mat, MatTraitConst, MatTraitConstManual, MatTraitManual, Size, CV_32FC3, CV_8UC1};
+use opencv::core::{AlgorithmHint, Mat, MatTraitConst, MatTraitConstManual, MatTraitManual, Size, CV_32FC3, CV_8UC1};
 use opencv::imgproc::{cvt_color, resize, COLOR_BGR2RGB, INTER_LINEAR};
 use crate::runner::Runner;
 use crate::SegmentImageError;
@@ -11,7 +11,7 @@ pub fn segment_image(
     image: &Mat
 ) -> Result<Mat, SegmentImageError> {
     let mut image_rgb = Mat::default();
-    cvt_color(&image, &mut image_rgb, COLOR_BGR2RGB, 0)
+    cvt_color(&image, &mut image_rgb, COLOR_BGR2RGB, 0, AlgorithmHint::ALGO_HINT_DEFAULT)
         .map_err(|_| SegmentImageError::PreProcessingError)?;
 
     let mut resized = Mat::default();
