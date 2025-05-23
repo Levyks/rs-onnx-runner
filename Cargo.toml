@@ -19,12 +19,6 @@ ort = "2.0.0-rc.9"
 [target.'cfg(target_os = "macos")'.dependencies]
 ort = {version = "2.0.0-rc.9", features = ["default", "coreml"]}
 
-[target.aarch64-apple-darwin]
-rustflags = ["-Clink-arg=-fapple-link-rtlib"]
-
-[target.x86_64-apple-darwin]
-rustflags = ["-Clink-arg=-fapple-link-rtlib"]
-
 [features]
 default = []
 directml = ["ort/directml"]
