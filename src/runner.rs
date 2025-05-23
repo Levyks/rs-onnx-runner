@@ -8,15 +8,33 @@ pub(crate) struct Runner {
 }
 
 impl Runner {
-    pub fn new(model_path: &str, use_gpu: bool) -> Result<Self, CreateRunnerError> {
+    pub fn new(model_path: &str, use_gpu: bool, device_id: Option<i32>) -> Result<Self, CreateRunnerError> {
         let providers = if use_gpu {
             vec![
                 #[cfg(feature = "cuda")]
-                ort::execution_providers::CUDAExecutionProvider::default().build(),
+                {
+                    let mut builder = ort::execution_providers::CUDAExecutionProvider::default();
+                    if let Some(device_id) = device_id {
+                        builder = builder.with_device_id(device_id)
+                    }
+                    builder.build()
+                },
                 #[cfg(feature = "directml")]
-                ort::execution_providers::DirectMLExecutionProvider::default().build(),
+                {
+                    let mut builder = ort::execution_providers::DirectMLExecutionProvider::default();
+                    if let Some(device_id) = device_id {
+                        builder = builder.with_device_id(device_id)
+                    }
+                    builder.build()
+                },
                 #[cfg(target_os = "macos")]
-                ort::execution_providers::CoreMLExecutionProvider::default().build(),
+                {
+                    let mut builder = ort::execution_providers::CoreMLExecutionProvider::default();
+                    if !use_gpu {
+                        builder = builder.with_use_cpu_only(true)
+                    }
+                    builder.build()
+                }
             ]
         } else {
             vec![ort::execution_providers::CPUExecutionProvider::default().build()]

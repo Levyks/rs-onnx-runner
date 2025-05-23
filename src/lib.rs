@@ -1,10 +1,13 @@
-use std::ffi::{c_char, c_void, CStr};
+use std::ffi::{c_char, c_int, c_void, CStr};
 use opencv::core::Mat;
 use opencv::mod_prelude::Boxed;
+use tracing::subscriber::set_global_default;
+use crate::logger::{FfiSubscriber, LoggerCallback, LOGGER_CALLBACK};
 use crate::runner::Runner;
 
 mod runner;
 mod processing;
+mod logger;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -36,6 +39,7 @@ pub struct RunnerOpaque(Box<Runner>);
 pub extern "C" fn create_runner(
     path: *const c_char,
     use_gpu: bool,
+    device_id: i32,
     out_runner: *mut *mut RunnerOpaque,
 ) -> CreateRunnerError {
     if path.is_null() {
@@ -49,7 +53,12 @@ pub extern "C" fn create_runner(
         }
     };
 
-    match Runner::new(path_str, use_gpu) {
+    let device_id = if device_id < 0 {
+        None
+    } else {
+        Some(device_id)
+    };
+    match Runner::new(path_str, use_gpu, device_id) {
         Ok(runner) => {
             let runner_opaque = RunnerOpaque(Box::new(runner));
             unsafe {
@@ -105,4 +114,31 @@ pub extern "C" fn segment_image(
     std::mem::forget(mat);
 
     result
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn init_logger(callback: LoggerCallback) -> c_int {
+    // Store the callback
+    {
+        let mut cb_guard = match LOGGER_CALLBACK.lock() {
+            Ok(guard) => guard,
+            Err(_) => {
+                eprintln!("Failed to lock callback mutex");
+                return -1;
+            }
+        };
+        *cb_guard = Some(callback);
+    }
+
+    // Set the global subscriber
+    match set_global_default(FfiSubscriber) {
+        Ok(_) => {
+            tracing::info!("Tracing initialized successfully");
+            0 // Success
+        }
+        Err(e) => {
+            eprintln!("Failed to set tracing subscriber: {}", e);
+            -1 // Error
+        }
+    }
 }
