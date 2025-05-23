@@ -60,10 +60,14 @@ pub extern "C" fn create_runner(
     };
     match Runner::new(path_str, use_gpu, device_id) {
         Ok(runner) => {
+            tracing::info!("Model loaded successfully from {}", path_str);
             let runner_ptr = Box::into_raw(Box::new(runner));
+            tracing::info!("Runner pointer: {:?}", runner_ptr);
             let runner_opaque = RunnerOpaque(runner_ptr);
+            tracing::info!("Runner opaque pointer: {:?}", runner_opaque);
             unsafe {
                 *out_runner = Box::into_raw(Box::new(runner_opaque));
+                tracing::info!("Runner opaque pointer set: {:?}", *out_runner);
             }
             CreateRunnerError::None
         }
