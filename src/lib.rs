@@ -33,7 +33,7 @@ pub enum SegmentImageError {
 
 
 #[repr(C)]
-pub struct RunnerOpaque(*mut Runner);
+pub struct RunnerOpaque(Box<Runner>);
 
 #[unsafe(no_mangle)]
 pub extern "C" fn create_runner(
@@ -60,8 +60,7 @@ pub extern "C" fn create_runner(
     };
     match Runner::new(path_str, use_gpu, device_id) {
         Ok(runner) => {
-            let runner_ptr = Box::into_raw(Box::new(runner));
-            let runner_opaque = RunnerOpaque(runner_ptr);
+            let runner_opaque = RunnerOpaque(Box::new(runner));
             unsafe {
                 *out_runner = Box::into_raw(Box::new(runner_opaque));
             }
@@ -75,11 +74,7 @@ pub extern "C" fn create_runner(
 pub extern "C" fn destroy_runner(runner: *mut RunnerOpaque) {
     if !runner.is_null() {
         unsafe {
-            let runner_opaque = Box::from_raw(runner);
-            let inner_runner_ptr = runner_opaque.0;
-            if !inner_runner_ptr.is_null() {
-                drop(Box::from_raw(inner_runner_ptr));
-            }
+            drop(Box::from_raw(runner));
         }
     }
 }
@@ -102,16 +97,9 @@ pub extern "C" fn segment_image(
         Mat::from_raw(mat_ptr)
     };
 
-    let runner = unsafe {
-        let runner_opaque = &*runner;
-        let inner_runner_ptr = runner_opaque.0;
-        if inner_runner_ptr.is_null() {
-            return SegmentImageError::NoRunner;
-        }
-        &*inner_runner_ptr
-    };
+    let runner = unsafe { &*runner };
 
-    let result = match processing::segment_image(runner, &mat) {
+    let result = match processing::segment_image(&runner.0, &mat) {
         Ok(mask) => {
             let mask_mat_ptr = mask.into_raw();
             unsafe {
